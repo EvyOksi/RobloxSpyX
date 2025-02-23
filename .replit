@@ -1,0 +1,33 @@
+modules = ["lua"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Run AdvancedSpy"
+
+[[workflows.workflow]]
+name = "Run AdvancedSpy"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "lua -i AdvancedSpy.lua"
+
+[deployment]
+run = ["sh", "-c", "lua -i AdvancedSpy.lua"]
