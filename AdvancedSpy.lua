@@ -1,9 +1,33 @@
+
 --[[
     AdvancedSpy
     A mobile-friendly enhanced remote spy for Roblox games.
     Author: Assistant
     Version: 1.0.0
 ]]
+
+-- Create modules folder
+local modules = Instance.new("Folder")
+modules.Name = "AdvancedSpyModules"
+modules.Parent = game:GetService("ReplicatedStorage")
+
+-- Load module scripts
+local function loadModule(name, source)
+    local module = Instance.new("ModuleScript")
+    module.Name = name
+    module.Source = source
+    module.Parent = modules
+    return require(module)
+end
+
+-- Initialize core components
+local UIComponents = loadModule("UIComponents", game:HttpGet("https://raw.githubusercontent.com/EvyOksi/RobloxSpyX/main/modules/UIComponents.lua"))
+local RemoteInterceptor = loadModule("RemoteInterceptor", game:HttpGet("https://raw.githubusercontent.com/EvyOksi/RobloxSpyX/main/modules/RemoteInterceptor.lua"))
+local ScriptGenerator = loadModule("ScriptGenerator", game:HttpGet("https://raw.githubusercontent.com/EvyOksi/RobloxSpyX/main/modules/ScriptGenerator.lua"))
+local Theme = loadModule("Theme", game:HttpGet("https://raw.githubusercontent.com/EvyOksi/RobloxSpyX/main/modules/Theme.lua"))
+local TouchControls = loadModule("TouchControls", game:HttpGet("https://raw.githubusercontent.com/EvyOksi/RobloxSpyX/main/modules/TouchControls.lua"))
+local NetworkVisualizer = loadModule("NetworkVisualizer", game:HttpGet("https://raw.githubusercontent.com/EvyOksi/RobloxSpyX/main/modules/NetworkVisualizer.lua"))
+
 local AdvancedSpy = {
     Version = "1.0.0",
     Enabled = false,
@@ -26,14 +50,6 @@ local function debugLog(module, message)
         print(string.format("[AdvancedSpy Debug] [%s] %s", module, message))
     end
 end
-
--- Load modules
-local UIComponents = require("modules.UIComponents")
-local RemoteInterceptor = require("modules.RemoteInterceptor")
-local ScriptGenerator = require("modules.ScriptGenerator")
-local Theme = require("modules.Theme")
-local TouchControls = require("modules.TouchControls")
-local NetworkVisualizer = require("modules.NetworkVisualizer")
 
 -- Core UI Elements
 local GUI = {
@@ -115,7 +131,7 @@ function AdvancedSpy:HandleRemoteCall(remote, args, returnValue, stats)
         Timestamp = os.time(),
         Stack = debug.traceback(),
         Id = #self.RemoteLog + 1,
-        NetworkStats = stats  -- Detailed network statistics from interception
+        NetworkStats = stats
     }
 
     table.insert(self.RemoteLog, 1, logEntry)
@@ -149,7 +165,6 @@ function AdvancedSpy:TrimLogs()
     debugLog("Logs", string.format("Trimmed logs to %d entries", #self.RemoteLog))
 end
 
--- API Functions
 function AdvancedSpy:BlockRemote(remote)
     if not remote then return end
     debugLog("API", string.format("Blocking remote: %s", remote.Name))
@@ -214,7 +229,6 @@ function AdvancedSpy:Destroy()
     debugLog("Cleanup", "AdvancedSpy destroyed successfully")
 end
 
--- Return the module initialization function
 return function()
     AdvancedSpy:Init()
     return AdvancedSpy
