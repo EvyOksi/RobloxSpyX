@@ -1,23 +1,24 @@
-# Roblox Studio files
-*.rbxl
-*.rbxlx
-*.rbxm
-*.rbxmx
 
-# Lua compiler output
-*.luac
+# Replit specific
+.replit
+replit.nix
+.breakpoints
+.upm/
+.config/
+.cache/
 
-# Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
-# OS generated files
+# Logs
+*.log
+
+# Environment
+.env
+.venv
+
+# OS specific
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
