@@ -28,6 +28,7 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "lua -i AdvancedSpy.lua"
+waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "lua -i AdvancedSpy.lua"]
