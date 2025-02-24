@@ -22,33 +22,45 @@ end
 
 function RemoteInterceptor:Init(callback)
     if not self:IsRobloxEnvironment() then
-        print("[RemoteInterceptor] Warning: Running outside Roblox environment. Remote interception will be limited.")
+        print("[RemoteInterceptor] Warning: Must be run within Roblox!")
         return
     end
 
     print("[RemoteInterceptor] Initializing remote interceptor...")
     self.Callback = callback
+    self.HookedRemotes = {}
+    self.BlacklistedRemotes = {}
     self:HookRemotes()
+    self:SetupAutoInterception()
 end
 
 function RemoteInterceptor:HookRemotes()
-    if not self:IsRobloxEnvironment() then
-        print("[RemoteInterceptor] Skipping remote hooks in non-Roblox environment")
-        return
-    end
-
     print("[RemoteInterceptor] Setting up remote hooks...")
+
     -- Hook RemoteFunction
     local oldInvoke = Instance.new("RemoteFunction").InvokeServer
     hookFunction(oldInvoke, function(self, ...)
+        if self.BlacklistedRemotes[self] then
+            return oldInvoke(self, ...)
+        end
+
         local args = {...}
+        local callStart = os.clock()
         local success, returnValue = pcall(function()
             return oldInvoke(self, unpack(args))
         end)
+        local callEnd = os.clock()
 
         if success then
-            print(string.format("[RemoteInterceptor] Intercepted RemoteFunction call: %s", self.Name))
-            self.Callback(self, args, returnValue)
+            print(string.format("[RemoteInterceptor] Intercepted RemoteFunction call: %s (%.3fs)", self.Name, callEnd - callStart))
+            if self.Callback then
+                self.Callback(self, args, returnValue, {
+                    duration = callEnd - callStart,
+                    timestamp = os.time(),
+                    type = "RemoteFunction",
+                    path = self:GetFullName()
+                })
+            end
             return returnValue
         else
             warn("[RemoteInterceptor] Failed to intercept RemoteFunction:", returnValue)
@@ -59,14 +71,27 @@ function RemoteInterceptor:HookRemotes()
     -- Hook RemoteEvent
     local oldFireServer = Instance.new("RemoteEvent").FireServer
     hookFunction(oldFireServer, function(self, ...)
+        if self.BlacklistedRemotes[self] then
+            return oldFireServer(self, ...)
+        end
+
         local args = {...}
+        local callStart = os.clock()
         local success, returnValue = pcall(function()
             return oldFireServer(self, unpack(args))
         end)
+        local callEnd = os.clock()
 
         if success then
-            print(string.format("[RemoteInterceptor] Intercepted RemoteEvent call: %s", self.Name))
-            self.Callback(self, args, nil)
+            print(string.format("[RemoteInterceptor] Intercepted RemoteEvent call: %s (%.3fs)", self.Name, callEnd - callStart))
+            if self.Callback then
+                self.Callback(self, args, nil, {
+                    duration = callEnd - callStart,
+                    timestamp = os.time(),
+                    type = "RemoteEvent",
+                    path = self:GetFullName()
+                })
+            end
             return returnValue
         else
             warn("[RemoteInterceptor] Failed to intercept RemoteEvent:", returnValue)
@@ -75,6 +100,33 @@ function RemoteInterceptor:HookRemotes()
     end)
 
     print("[RemoteInterceptor] Remote hooks setup completed")
+end
+
+function RemoteInterceptor:SetupAutoInterception()
+    -- Watch for new RemoteEvents and RemoteFunctions
+    game.DescendantAdded:Connect(function(descendant)
+        if descendant:IsA("RemoteEvent") or descendant:IsA("RemoteFunction") then
+            print(string.format("[RemoteInterceptor] New remote detected: %s", descendant.Name))
+            self.HookedRemotes[descendant] = true
+        end
+    end)
+
+    -- Initial scan for existing remotes
+    for _, instance in ipairs(game:GetDescendants()) do
+        if instance:IsA("RemoteEvent") or instance:IsA("RemoteFunction") then
+            self.HookedRemotes[instance] = true
+        end
+    end
+end
+
+function RemoteInterceptor:BlockRemote(remote)
+    self.BlacklistedRemotes[remote] = true
+    print(string.format("[RemoteInterceptor] Blocked remote: %s", remote.Name))
+end
+
+function RemoteInterceptor:UnblockRemote(remote)
+    self.BlacklistedRemotes[remote] = nil
+    print(string.format("[RemoteInterceptor] Unblocked remote: %s", remote.Name))
 end
 
 function RemoteInterceptor:CreateSignal(remote)
@@ -111,39 +163,19 @@ function RemoteInterceptor:CreateSignal(remote)
     return signal
 end
 
-function RemoteInterceptor:HookSpecificRemote(remote, callback)
-    if not self:IsRobloxEnvironment() then
-        print(string.format("[RemoteInterceptor] Skipping specific remote hook for %s in non-Roblox environment", remote.Name))
-        return
-    end
-
-    print(string.format("[RemoteInterceptor] Setting up specific hook for remote: %s", remote.Name))
-    if remote:IsA("RemoteFunction") then
-        local oldInvoke = remote.InvokeServer
-        remote.InvokeServer = function(self, ...)
-            local args = {...}
-            local result = oldInvoke(self, unpack(args))
-            callback(unpack(args))
-            return result
-        end
-    elseif remote:IsA("RemoteEvent") then
-        local oldFire = remote.FireServer
-        remote.FireServer = function(self, ...)
-            local args = {...}
-            oldFire(self, unpack(args))
-            callback(unpack(args))
+function RemoteInterceptor:GetAllRemotes()
+    local remotes = {}
+    for remote, _ in pairs(self.HookedRemotes) do
+        if remote and remote.Parent then
+            table.insert(remotes, {
+                Name = remote.Name,
+                Type = remote.ClassName,
+                Path = remote:GetFullName(),
+                IsBlocked = self.BlacklistedRemotes[remote] or false
+            })
         end
     end
-end
-
--- Create mock remote simulation for testing
-function RemoteInterceptor:SimulateRemoteCall(remote, args, returnValue)
-    print(string.format("[RemoteInterceptor] Simulating remote call for: %s", remote.Name))
-    if self.Callback then
-        self.Callback(remote, args, returnValue)
-    else
-        print("[RemoteInterceptor] Warning: No callback registered for remote simulation")
-    end
+    return remotes
 end
 
 return RemoteInterceptor

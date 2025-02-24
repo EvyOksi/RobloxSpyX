@@ -16,7 +16,7 @@ local AdvancedSpy = {
         MaxLogs = 1000,
         AutoBlock = false,
         LogReturnValues = true,
-        Debug = true -- Enable debug mode
+        Debug = true
     }
 }
 
@@ -27,40 +27,29 @@ local function debugLog(module, message)
     end
 end
 
--- Load modules from local files
-local function loadModule(name)
-    debugLog("ModuleLoader", "Attempting to load module: " .. name)
-    local success, module = pcall(function()
-        return require("modules." .. name)
-    end)
-
-    if not success then
-        debugLog("ModuleLoader", "Failed to load module " .. name .. ": " .. tostring(module))
-        error("Failed to load module " .. name .. ": " .. tostring(module))
-    end
-
-    debugLog("ModuleLoader", "Successfully loaded module: " .. name)
-    return module
-end
-
 -- Load modules
-debugLog("Init", "Loading required modules...")
-local UIComponents = loadModule("UIComponents")
-local RemoteInterceptor = loadModule("RemoteInterceptor")
-local ScriptGenerator = loadModule("ScriptGenerator")
-local Theme = loadModule("Theme")
-local TouchControls = loadModule("TouchControls")
-local NetworkVisualizer = loadModule("NetworkVisualizer")
+local UIComponents = require("modules.UIComponents")
+local RemoteInterceptor = require("modules.RemoteInterceptor")
+local ScriptGenerator = require("modules.ScriptGenerator")
+local Theme = require("modules.Theme")
+local TouchControls = require("modules.TouchControls")
+local NetworkVisualizer = require("modules.NetworkVisualizer")
 
 -- Core UI Elements
 local GUI = {
     Main = nil,
     LogList = nil,
     SearchBar = nil,
-    SettingsPanel = nil
+    SettingsPanel = nil,
+    RemotePanel = nil  -- Add remote management panel
 }
 
 function AdvancedSpy:Init()
+    if not game then
+        warn("AdvancedSpy must be run within Roblox!")
+        return
+    end
+
     debugLog("Init", "Initializing AdvancedSpy v" .. self.Version)
 
     -- Create main UI
@@ -69,16 +58,14 @@ function AdvancedSpy:Init()
     GUI.LogList = UIComponents.CreateLogList()
     GUI.SearchBar = UIComponents.CreateSearchBar()
     GUI.SettingsPanel = UIComponents.CreateSettingsPanel()
+    GUI.RemotePanel = UIComponents.CreateRemoteManagementPanel()
+    GUI.RemotePanel.Parent = GUI.Main.MainFrame.ContentFrame
 
-    -- Initialize touch controls
+    -- Initialize touch controls for mobile
     debugLog("TouchControls", "Initializing touch controls...")
     TouchControls:Init(GUI.Main)
 
-    -- Initialize network visualizer
-    debugLog("NetworkVisualizer", "Initializing network visualizer...")
-    NetworkVisualizer:Init()
-
-    -- Setup remote interceptors
+    -- Initialize remote interceptor
     debugLog("RemoteInterceptor", "Setting up remote interceptors...")
     RemoteInterceptor:Init(function(remote, args, returnValue)
         self:HandleRemoteCall(remote, args, returnValue)
@@ -88,35 +75,22 @@ function AdvancedSpy:Init()
     debugLog("Theme", "Applying initial theme: " .. self.Settings.Theme)
     Theme:Apply(self.Settings.Theme)
 
+    -- Setup search functionality
+    GUI.SearchBar.Changed:Connect(function(text)
+        self:FilterLogs(text)
+    end)
+
+    -- Setup periodic remote list updates
+    self:UpdateRemoteList()
+    task.spawn(function()
+        while self.Enabled do
+            task.wait(5)  -- Update every 5 seconds
+            self:UpdateRemoteList()
+        end
+    end)
+
     self.Enabled = true
     debugLog("Init", "AdvancedSpy initialized successfully")
-
-    -- Create a test remote call for non-Roblox environment
-    if not RemoteInterceptor:IsRobloxEnvironment() then
-        debugLog("Test", "Creating test remote call...")
-        self:TestRemoteCall()
-    end
-end
-
-function AdvancedSpy:TestRemoteCall()
-    -- Create a mock remote object
-    local mockRemote = {
-        Name = "TestRemote",
-        IsA = function(self, className)
-            return className == "RemoteFunction"
-        end
-    }
-
-    -- Simulate a remote call
-    self:HandleRemoteCall(
-        mockRemote,
-        {
-            "test_arg1",
-            123,
-            {key = "value"}
-        },
-        "test_return_value"
-    )
 end
 
 function AdvancedSpy:HandleRemoteCall(remote, args, returnValue)
@@ -150,6 +124,18 @@ function AdvancedSpy:HandleRemoteCall(remote, args, returnValue)
 
     self:TrimLogs()
     self:UpdateLogDisplay(logEntry)
+end
+
+function AdvancedSpy:FilterLogs(searchText)
+    searchText = searchText:lower()
+    for _, entry in ipairs(self.RemoteLog) do
+        local visible = entry.Remote.Name:lower():find(searchText) ~= nil
+        -- Update UI visibility
+        local logElement = GUI.LogList:FindFirstChild("Log_" .. entry.Id)
+        if logElement then
+            logElement.Visible = visible
+        end
+    end
 end
 
 function AdvancedSpy:UpdateLogDisplay(logEntry)
@@ -208,8 +194,13 @@ function AdvancedSpy:Destroy()
     debugLog("Cleanup", "AdvancedSpy destroyed successfully")
 end
 
-debugLog("Main", "Starting AdvancedSpy...")
--- Initialize when loaded
+function AdvancedSpy:UpdateRemoteList()
+    local remotes = RemoteInterceptor:GetAllRemotes()
+    GUI.RemotePanel:UpdateRemotes(remotes)
+    debugLog("RemoteList", string.format("Updated remote list (%d remotes)", #remotes))
+end
+
+-- Return the module
 return function()
     AdvancedSpy:Init()
     return AdvancedSpy

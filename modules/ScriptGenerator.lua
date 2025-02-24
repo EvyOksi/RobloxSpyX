@@ -192,9 +192,9 @@ function ScriptGenerator:SerializeValue(value)
         local result = "{\n"
         for k, v in pairs(value) do
             local keyStr = type(k) == "string" and string.format("[%q]", k) or string.format("[%s]", tostring(k))
-            result = result .. string.format("    %s = %s,\n", keyStr, self:SerializeValue(v))
+            result = result .. string.format("        %s = %s,\n", keyStr, self:SerializeValue(v))
         end
-        result = result .. "}"
+        result = result .. "    }"
         return result
     elseif valueType == "Instance" then
         return string.format('game:GetService("%s")', value.ClassName)

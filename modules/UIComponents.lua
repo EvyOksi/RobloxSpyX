@@ -258,4 +258,102 @@ function UIComponents.CreateMockLogEntry()
     end
 end
 
+function UIComponents.CreateRemoteManagementPanel()
+    local Panel = Instance.new("Frame")
+    Panel.Name = "RemoteManagementPanel"
+    Panel.Size = UDim2.new(0.3, 0, 1, 0)
+    Panel.Position = UDim2.new(0.7, 0, 0, 0)
+    Panel.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    Panel.BorderSizePixel = 0
+
+    -- Add title
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.BackgroundTransparency = 1
+    Title.Text = "Remote Management"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 16
+    Title.Font = Enum.Font.GothamBold
+    Title.Parent = Panel
+
+    -- Add remote list
+    local RemoteList = Instance.new("ScrollingFrame")
+    RemoteList.Name = "RemoteList"
+    RemoteList.Size = UDim2.new(1, -20, 1, -40)
+    RemoteList.Position = UDim2.new(0, 10, 0, 35)
+    RemoteList.BackgroundTransparency = 0.9
+    RemoteList.BorderSizePixel = 0
+    RemoteList.ScrollBarThickness = 4
+    RemoteList.Parent = Panel
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Parent = RemoteList
+    UIListLayout.SortOrder = Enum.SortOrder.Name
+    UIListLayout.Padding = UDim.new(0, 5)
+
+    -- Function to update remote list
+    function Panel:UpdateRemotes(remotes)
+        -- Clear existing entries
+        for _, child in ipairs(RemoteList:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+
+        -- Add new entries
+        for _, remote in ipairs(remotes) do
+            local Entry = Instance.new("Frame")
+            Entry.Size = UDim2.new(1, 0, 0, 60)
+            Entry.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            Entry.BorderSizePixel = 0
+
+            -- Add remote name
+            local Name = Instance.new("TextLabel")
+            Name.Size = UDim2.new(1, -100, 0, 20)
+            Name.Position = UDim2.new(0, 10, 0, 5)
+            Name.BackgroundTransparency = 1
+            Name.Text = remote.Name
+            Name.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Name.TextXAlignment = Enum.TextXAlignment.Left
+            Name.Parent = Entry
+
+            -- Add remote type
+            local Type = Instance.new("TextLabel")
+            Type.Size = UDim2.new(1, -100, 0, 20)
+            Type.Position = UDim2.new(0, 10, 0, 25)
+            Type.BackgroundTransparency = 1
+            Type.Text = remote.Type
+            Type.TextColor3 = Color3.fromRGB(200, 200, 200)
+            Type.TextXAlignment = Enum.TextXAlignment.Left
+            Type.Parent = Entry
+
+            -- Add block toggle button
+            local BlockButton = Instance.new("TextButton")
+            BlockButton.Size = UDim2.new(0, 80, 0, 25)
+            BlockButton.Position = UDim2.new(1, -90, 0, 5)
+            BlockButton.BackgroundColor3 = remote.IsBlocked and Color3.fromRGB(231, 76, 60) or Color3.fromRGB(46, 204, 113)
+            BlockButton.Text = remote.IsBlocked and "Unblock" or "Block"
+            BlockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            BlockButton.Parent = Entry
+
+            -- Add copy script button
+            local ScriptButton = Instance.new("TextButton")
+            ScriptButton.Size = UDim2.new(0, 80, 0, 25)
+            ScriptButton.Position = UDim2.new(1, -90, 0, 35)
+            ScriptButton.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+            ScriptButton.Text = "Copy Script"
+            ScriptButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            ScriptButton.Parent = Entry
+
+            Entry.Parent = RemoteList
+        end
+
+        -- Update canvas size
+        RemoteList.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+    end
+
+    return Panel
+end
+
 return UIComponents

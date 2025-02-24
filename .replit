@@ -1,4 +1,4 @@
-modules = ["lua"]
+modules = ["lua", "python-3.11"]
 
 [nix]
 channel = "stable-24_05"
@@ -15,6 +15,10 @@ author = "agent"
 task = "workflow.run"
 args = "Run AdvancedSpy"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "AdvancedSpy Server"
+
 [[workflows.workflow]]
 name = "Run AdvancedSpy"
 author = "agent"
@@ -30,5 +34,24 @@ task = "shell.exec"
 args = "lua -i AdvancedSpy.lua"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "AdvancedSpy Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python server.py"
+waitForPort = 5000
+
 [deployment]
 run = ["sh", "-c", "lua -i AdvancedSpy.lua"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
