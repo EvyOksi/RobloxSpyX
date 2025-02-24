@@ -50,6 +50,7 @@ local RemoteInterceptor = loadModule("RemoteInterceptor")
 local ScriptGenerator = loadModule("ScriptGenerator")
 local Theme = loadModule("Theme")
 local TouchControls = loadModule("TouchControls")
+local NetworkVisualizer = loadModule("NetworkVisualizer")
 
 -- Core UI Elements
 local GUI = {
@@ -72,6 +73,10 @@ function AdvancedSpy:Init()
     -- Initialize touch controls
     debugLog("TouchControls", "Initializing touch controls...")
     TouchControls:Init(GUI.Main)
+
+    -- Initialize network visualizer
+    debugLog("NetworkVisualizer", "Initializing network visualizer...")
+    NetworkVisualizer:Init()
 
     -- Setup remote interceptors
     debugLog("RemoteInterceptor", "Setting up remote interceptors...")
@@ -135,6 +140,10 @@ function AdvancedSpy:HandleRemoteCall(remote, args, returnValue)
         Stack = debug.traceback(),
         Id = #self.RemoteLog + 1
     }
+
+    -- Track network statistics
+    local networkStats = NetworkVisualizer:TrackRemoteCall(remote, args, returnValue)
+    logEntry.NetworkStats = networkStats
 
     table.insert(self.RemoteLog, 1, logEntry)
     debugLog("RemoteCall", string.format("Added log entry #%d", logEntry.Id))
