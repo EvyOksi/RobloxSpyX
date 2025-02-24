@@ -24,6 +24,14 @@ HTML_TEMPLATE = """
         }
         h1 { color: #3498DB; }
         .feature { margin: 10px 0; }
+        code {
+            background: #2C3E50;
+            padding: 10px;
+            display: block;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -35,9 +43,17 @@ HTML_TEMPLATE = """
         <div class="feature">✅ Network Visualization Ready</div>
         <p style="margin-top: 20px;">
             Load AdvancedSpy in Roblox using:<br>
-            <code style="background: #2C3E50; padding: 10px; display: block; margin: 10px 0;">
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/YourUsername/AdvancedSpy/main/AdvancedSpy.lua"))()
-            </code>
+            <code>loadstring(game:HttpGet("https://raw.githubusercontent.com/YourUsername/AdvancedSpy/main/AdvancedSpy.lua"))()</code>
+        </p>
+        <p>
+            Features:
+            <ul>
+                <li>Remote event and function interception</li>
+                <li>Mobile-friendly touch controls</li>
+                <li>Dark/Light theme support</li>
+                <li>Advanced script generation</li>
+                <li>Network traffic analysis</li>
+            </ul>
         </p>
     </div>
 </body>
@@ -49,4 +65,5 @@ def status():
     return render_template_string(HTML_TEMPLATE)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
