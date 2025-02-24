@@ -27,7 +27,7 @@ local Color3 = {
     end
 }
 
--- Initialize themes with mock Color3
+-- Initialize themes
 Theme.Themes = {
     dark = {
         background = Color3.fromRGB(40, 40, 40),
@@ -83,19 +83,17 @@ function Theme:Apply(themeName)
     end
 
     -- Find the ScreenGui
-    if game then
-        local gui = game:GetService("CoreGui"):FindFirstChild("AdvancedSpy")
-        if gui then
-            -- Recursively update all UI elements
-            local function updateRecursive(parent)
-                for _, child in ipairs(parent:GetChildren()) do
-                    updateElement(child)
-                    updateRecursive(child)
-                end
+    local gui = game:GetService("CoreGui"):FindFirstChild("AdvancedSpy")
+    if gui then
+        -- Recursively update all UI elements
+        local function updateRecursive(parent)
+            for _, child in ipairs(parent:GetChildren()) do
+                updateElement(child)
+                updateRecursive(child)
             end
-
-            updateRecursive(gui)
         end
+
+        updateRecursive(gui)
     end
 end
 
@@ -106,51 +104,6 @@ end
 
 function Theme:IsRobloxEnvironment()
     return type(game) == "userdata" and type(game.GetService) == "function"
-end
-
-function Theme:CreateColorPicker(color, callback)
-    if not self:IsRobloxEnvironment() then
-        print("Warning: Color picker not available outside Roblox environment")
-        return nil
-    end
-
-    local picker = Instance.new("Frame")
-    picker.Size = UDim2.new(0, 30, 0, 30)
-    picker.BackgroundColor3 = color
-    picker.BorderSizePixel = 1
-    picker.BorderColor3 = self:GetColor("border")
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = picker
-
-    picker.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or
-           input.UserInputType == Enum.UserInputType.Touch then
-            local colors = {
-                Color3.fromRGB(255, 0, 0),
-                Color3.fromRGB(0, 255, 0),
-                Color3.fromRGB(0, 0, 255)
-            }
-
-            local currentIndex = 1
-            for i, c in ipairs(colors) do
-                if c == picker.BackgroundColor3 then
-                    currentIndex = i
-                    break
-                end
-            end
-
-            currentIndex = currentIndex % #colors + 1
-            picker.BackgroundColor3 = colors[currentIndex]
-
-            if callback then
-                callback(colors[currentIndex])
-            end
-        end
-    end)
-
-    return picker
 end
 
 -- Print warning if not in Roblox environment

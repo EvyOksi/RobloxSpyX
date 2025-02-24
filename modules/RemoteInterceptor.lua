@@ -1,5 +1,9 @@
-local RemoteInterceptor = {}
+local RemoteInterceptor = {
+    HookedRemotes = {},
+    BlacklistedRemotes = {}
+}
 
+-- Hook function implementation for different exploit environments
 local hookFunction = hookfunction or replaceclosure or function(func, hook)
     local metatable = getrawmetatable(game)
     local oldNamecall = metatable.__namecall
@@ -28,8 +32,6 @@ function RemoteInterceptor:Init(callback)
 
     print("[RemoteInterceptor] Initializing remote interceptor...")
     self.Callback = callback
-    self.HookedRemotes = {}
-    self.BlacklistedRemotes = {}
     self:HookRemotes()
     self:SetupAutoInterception()
 end
@@ -149,14 +151,6 @@ function RemoteInterceptor:CreateSignal(remote)
         }
 
         table.insert(connections, connection)
-
-        -- Hook the remote
-        self:HookSpecificRemote(remote, function(...)
-            if connection.Connected then
-                callback(...)
-            end
-        end)
-
         return connection
     end
 
